@@ -29,47 +29,78 @@ st.set_page_config(
 
 st.markdown("""
 <style>
+    /* Fondo principal */
     .stApp {
         background-color: #f5f7fb;
         color: #172033;
     }
 
-    .block-container {
-        padding-top: 2rem;
-        max-width: 1400px;
-    }
-
+    /* Títulos */
     h1, h2, h3 {
         color: #143b65 !important;
     }
 
-    div[data-testid="stMetric"] {
+    /* Textos normales del contenido */
+    [data-testid="stMain"] p,
+    [data-testid="stMain"] label,
+    [data-testid="stMain"] small {
+        color: #334155;
+    }
+
+    /* Tarjetas de métricas */
+    [data-testid="stMetric"] {
         background-color: #ffffff;
-        padding: 14px;
+        padding: 15px;
         border: 1px solid #dce4ef;
         border-radius: 12px;
     }
 
-    div[data-testid="stMetricLabel"] * {
+    /* Títulos de métricas */
+    [data-testid="stMetricLabel"],
+    [data-testid="stMetricLabel"] *,
+    [data-testid="stMetricLabel"] p {
+        color: #334155 !important;
+        opacity: 1 !important;
+        -webkit-text-fill-color: #334155 !important;
+    }
+
+    /* Números de métricas */
+    [data-testid="stMetricValue"],
+    [data-testid="stMetricValue"] * {
+        color: #12355b !important;
+        opacity: 1 !important;
+        -webkit-text-fill-color: #12355b !important;
+    }
+
+    /* Texto del deslizador */
+    [data-testid="stSlider"] label,
+    [data-testid="stSlider"] label *,
+    [data-testid="stSlider"] p {
+        color: #334155 !important;
+        opacity: 1 !important;
+        -webkit-text-fill-color: #334155 !important;
+    }
+
+    /* Descripciones y notas */
+    [data-testid="stCaptionContainer"],
+    [data-testid="stCaptionContainer"] * {
         color: #475569 !important;
         opacity: 1 !important;
     }
 
-    div[data-testid="stMetricValue"] * {
-        color: #12355b !important;
+    /* Fundamento matemático desplegable */
+    [data-testid="stExpander"] summary,
+    [data-testid="stExpander"] summary * {
+        color: #143b65 !important;
         opacity: 1 !important;
     }
 
-    div[data-testid="stExpander"] summary,
-    div[data-testid="stExpander"] summary * {
-        color: #143b65 !important;
-    }
-
-    div[data-testid="stExpander"] summary {
+    [data-testid="stExpander"] summary {
         background-color: #e7eef7;
         border-radius: 8px;
     }
 
+    /* Barra lateral */
     [data-testid="stSidebar"] {
         background-color: #172033;
     }
