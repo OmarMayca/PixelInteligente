@@ -26,6 +26,7 @@ st.set_page_config(
 # ESTILOS VISUALES
 # ==========================================
 
+
 st.markdown("""
 <style>
     .stApp {
@@ -49,21 +50,24 @@ st.markdown("""
         border-radius: 12px;
     }
 
-    div[data-testid="stMetricLabel"] p {
+    div[data-testid="stMetricLabel"] * {
         color: #475569 !important;
-        font-weight: 500 !important;
-    }
-
-    div[data-testid="stMetricValue"] {
-        color: #12355b !important;
-    }
-
-    div[data-testid="stMetricValue"] > div {
-        color: #12355b !important;
+        opacity: 1 !important;
     }
 
     div[data-testid="stMetricValue"] * {
         color: #12355b !important;
+        opacity: 1 !important;
+    }
+
+    div[data-testid="stExpander"] summary,
+    div[data-testid="stExpander"] summary * {
+        color: #143b65 !important;
+    }
+
+    div[data-testid="stExpander"] summary {
+        background-color: #e7eef7;
+        border-radius: 8px;
     }
 
     [data-testid="stSidebar"] {
@@ -73,12 +77,9 @@ st.markdown("""
     [data-testid="stSidebar"] * {
         color: #f8fafc;
     }
-
-    [data-testid="stSidebar"] button {
-        color: #172033 !important;
-    }
 </style>
 """, unsafe_allow_html=True)
+
 
 
 # ==========================================
