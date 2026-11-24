@@ -2,27 +2,28 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
+import hashlib
 
 from PIL import Image, ImageOps
 from io import BytesIO
 from pathlib import Path
 from skimage.metrics import structural_similarity
-import hashlib
 
 
 # ==========================================
-# CONFIGURACIÓN DE LA APLICACIÓN
+# CONFIGURACIÓN DE LA PÁGINA
 # ==========================================
 
 st.set_page_config(
     page_title="Pixel Inteligente - SVD",
     page_icon="🦷",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 
 # ==========================================
-# DISEÑO VISUAL
+# ESTILOS VISUALES
 # ==========================================
 
 st.markdown("""
@@ -32,15 +33,49 @@ st.markdown("""
         color: #172033;
     }
 
-    h1, h2, h3 {
-        color: #143b65;
+    .block-container {
+        padding-top: 2rem;
+        max-width: 1400px;
     }
 
-    [data-testid="stMetric"] {
+    h1, h2, h3 {
+        color: #143b65 !important;
+    }
+
+    div[data-testid="stMetric"] {
         background-color: #ffffff;
-        padding: 15px;
-        border-radius: 10px;
+        padding: 14px;
         border: 1px solid #dce4ef;
+        border-radius: 12px;
+    }
+
+    div[data-testid="stMetricLabel"] p {
+        color: #475569 !important;
+        font-weight: 500 !important;
+    }
+
+    div[data-testid="stMetricValue"] {
+        color: #12355b !important;
+    }
+
+    div[data-testid="stMetricValue"] > div {
+        color: #12355b !important;
+    }
+
+    div[data-testid="stMetricValue"] * {
+        color: #12355b !important;
+    }
+
+    [data-testid="stSidebar"] {
+        background-color: #172033;
+    }
+
+    [data-testid="stSidebar"] * {
+        color: #f8fafc;
+    }
+
+    [data-testid="stSidebar"] button {
+        color: #172033 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -55,7 +90,7 @@ def cargar_grises(datos):
     imagen = ImageOps.exif_transpose(imagen)
     imagen = imagen.convert("L")
 
-    # Limitar dimensiones para mejorar rendimiento
+    # Limita dimensiones para mejorar el rendimiento.
     imagen.thumbnail((800, 800))
 
     A = np.asarray(imagen, dtype=np.float64)
@@ -82,11 +117,9 @@ def calcular_metricas(A, Ak, k):
     m, n = A.shape
 
     original = m * n
-
     comprimido = k * (m + n + 1)
 
     razon = original / comprimido
-
     reduccion = (1 - comprimido / original) * 100
 
     mse = np.mean((A - Ak) ** 2)
@@ -113,6 +146,16 @@ def calcular_metricas(A, Ak, k):
     )
 
 
+def calcular_energia(S, k):
+    energia_total = np.sum(S ** 2)
+    energia_k = np.sum(S[:k] ** 2)
+
+    if energia_total == 0:
+        return 100.0
+
+    return 100 * energia_k / energia_total
+
+
 # ==========================================
 # ENCABEZADO
 # ==========================================
@@ -120,13 +163,14 @@ def calcular_metricas(A, Ak, k):
 st.title("🦷 PIXEL INTELIGENTE")
 
 st.markdown(
-    "### Compresión y reconstrucción de radiografías "
-    "panorámicas dentales mediante SVD"
+    "### Compresión y reconstrucción de "
+    "radiografías panorámicas mediante SVD"
 )
 
 st.write(
-    "Aplicación interactiva desarrollada para el curso "
-    "de Álgebra Lineal Computacional."
+    "Proyecto de Álgebra Lineal Computacional. "
+    "Aplicación interactiva para evaluar la "
+    "compresión y calidad de reconstrucción."
 )
 
 st.divider()
@@ -138,30 +182,33 @@ st.divider()
 
 st.sidebar.title("PIXEL INTELIGENTE")
 
-st.sidebar.header("Configuración")
+st.sidebar.subheader("Configuración")
 
 archivo = st.sidebar.file_uploader(
-    "Selecciona una radiografía dental",
+    "Selecciona una radiografía",
     type=["jpg", "jpeg", "png"]
 )
 
 st.sidebar.info(
-    "Puedes cargar una radiografía o utilizar "
-    "la imagen de prueba incluida en el proyecto."
+    "Puedes cargar una imagen JPG o PNG "
+    "o utilizar la radiografía de prueba."
+)
+
+st.sidebar.caption(
+    "Utiliza imágenes de prueba o radiografías "
+    "anonimizadas con autorización."
 )
 
 
 # ==========================================
-# CARGAR LA RADIOGRAFÍA
+# CARGA DE IMAGEN
 # ==========================================
 
 if archivo is not None:
-
     datos = archivo.getvalue()
     nombre_imagen = archivo.name
 
 else:
-
     ruta = (
         Path(__file__).parent /
         "radiografia_dental.jpg"
@@ -170,7 +217,7 @@ else:
     if not ruta.exists():
         st.error(
             "No se encontró radiografia_dental.jpg. "
-            "Carga una imagen desde el panel lateral."
+            "Carga una radiografía desde el panel lateral."
         )
         st.stop()
 
@@ -179,7 +226,7 @@ else:
 
 
 # ==========================================
-# CALCULAR LA DESCOMPOSICIÓN SVD
+# DESCOMPOSICIÓN SVD
 # ==========================================
 
 identificador = hashlib.sha256(datos).hexdigest()
@@ -204,15 +251,14 @@ S = st.session_state["S"]
 Vt = st.session_state["Vt"]
 
 m, n = A.shape
-
 max_k = min(400, len(S))
 
 
 # ==========================================
-# CONTROL INTERACTIVO DE K
+# CONTROL DINÁMICO DE K
 # ==========================================
 
-st.subheader("Control dinámico de valores singulares")
+st.subheader("Control de valores singulares")
 
 k = st.slider(
     "Selecciona la cantidad de valores singulares (k)",
@@ -226,7 +272,7 @@ st.write(f"Valor seleccionado: **k = {k}**")
 
 
 # ==========================================
-# RECONSTRUIR RADIOGRAFÍA
+# RECONSTRUCCIÓN Y MÉTRICAS
 # ==========================================
 
 Ak = reconstruir(U, S, Vt, k)
@@ -241,102 +287,127 @@ Ak = reconstruir(U, S, Vt, k)
     ssim
 ) = calcular_metricas(A, Ak, k)
 
+energia = calcular_energia(S, k)
+
 
 # ==========================================
-# VISUALIZACIÓN PRINCIPAL
+# COMPARACIÓN DE RADIOGRAFÍAS
 # ==========================================
 
-col_imagen, col_datos = st.columns([2, 1])
+st.subheader("Comparación de radiografías")
 
-with col_imagen:
+col_original, col_reconstruida = st.columns(
+    2,
+    gap="medium"
+)
 
-    st.subheader("Radiografía reconstruida")
+with col_original:
+    st.markdown("**Radiografía original**")
 
     st.image(
-        Ak.astype(np.uint8),
-        caption=f"Reconstrucción SVD con k = {k}",
+        A.astype(np.uint8),
+        caption="Imagen original en escala de grises",
         width="stretch"
     )
 
-    mostrar_original = st.checkbox(
-        "Mostrar radiografía original"
+with col_reconstruida:
+    st.markdown(f"**Reconstrucción SVD - k = {k}**")
+
+    st.image(
+        Ak.astype(np.uint8),
+        caption=f"Imagen reconstruida con {k} valores singulares",
+        width="stretch"
     )
-
-    if mostrar_original:
-
-        st.image(
-            A.astype(np.uint8),
-            caption="Radiografía original",
-            width="stretch"
-        )
 
 
 # ==========================================
-# PANEL DE MÉTRICAS
+# INFORMACIÓN DE LA MATRIZ
 # ==========================================
 
-with col_datos:
+st.divider()
 
-    st.subheader("Datos de compresión")
+st.subheader("Datos de compresión")
 
-    st.write(f"**Imagen:** {nombre_imagen}")
+st.write(f"**Imagen:** {nombre_imagen}")
+st.write(f"**Dimensiones:** {m} × {n}")
+st.write(f"**Número de píxeles:** {original:,}")
 
-    st.write(f"**Dimensiones:** {m} × {n}")
+col1, col2, col3, col4 = st.columns(4)
 
-    st.write(f"**Número de píxeles:** {original:,}")
+with col1:
+    st.metric("Valores singulares k", k)
 
-    st.divider()
-
-    st.metric(
-        "Valores singulares (k)",
-        k
-    )
-
+with col2:
     st.metric(
         "Coeficientes originales",
         f"{original:,}"
     )
 
+with col3:
     st.metric(
         "Coeficientes SVD",
         f"{comprimido:,}"
     )
 
+with col4:
     st.metric(
         "Razón de compresión",
         f"{razon:.2f}:1"
     )
 
-    st.metric(
-        "Reducción teórica",
-        f"{reduccion:.2f}%"
+st.write("**Reducción teórica de coeficientes**")
+
+st.progress(
+    min(1.0, max(0.0, reduccion / 100)),
+    text=f"{reduccion:.2f}%"
+)
+
+if razon < 1:
+    st.warning(
+        "Con este valor de k, la representación SVD "
+        "requiere más coeficientes que la imagen original."
     )
 
-    if razon < 1:
 
-        st.warning(
-            "La representación SVD requiere más "
-            "coeficientes que la matriz original."
-        )
+# ==========================================
+# MÉTRICAS DE CALIDAD
+# ==========================================
 
-    st.divider()
+st.divider()
 
-    st.subheader("Calidad de reconstrucción")
+st.subheader("Calidad de reconstrucción")
 
+met1, met2, met3, met4 = st.columns(4)
+
+with met1:
     st.metric(
-        "Error cuadrático medio (MSE)",
+        "Error cuadrático medio",
         f"{mse:.4f}"
     )
 
+with met2:
     st.metric(
         "PSNR",
         f"{psnr:.2f} dB"
     )
 
+with met3:
     st.metric(
         "SSIM",
         f"{ssim:.4f}"
     )
+
+with met4:
+    st.metric(
+        "Energía conservada",
+        f"{energia:.2f}%"
+    )
+
+st.caption(
+    "MSE, PSNR y SSIM comparan la imagen original "
+    "con su reconstrucción. La energía conservada "
+    "se calcula a partir de los valores singulares."
+)
 
 
 # ==========================================
@@ -348,24 +419,29 @@ st.divider()
 st.subheader("Análisis de valores singulares")
 
 mostrar_grafica = st.checkbox(
-    "Mostrar gráfica de valores singulares"
+    "Mostrar gráfica de valores singulares",
+    value=True
 )
 
 if mostrar_grafica:
 
-    fig, ax = plt.subplots(figsize=(10, 4))
+    fig, ax = plt.subplots(figsize=(9, 4))
+
+    indices = np.arange(1, len(S) + 1)
 
     ax.semilogy(
-        np.arange(1, len(S) + 1),
-        S,
-        color="blue",
+        indices,
+        np.maximum(S, 1e-12),
+        color="#2563eb",
+        linewidth=2,
         label="Valores singulares"
     )
 
     ax.axvline(
         k,
-        color="red",
+        color="#dc2626",
         linestyle="--",
+        linewidth=2,
         label=f"k = {k}"
     )
 
@@ -373,91 +449,94 @@ if mostrar_grafica:
         "Decaimiento de los valores singulares"
     )
 
-    ax.set_xlabel(
-        "Índice del valor singular"
-    )
+    ax.set_xlabel("Índice del valor singular")
 
     ax.set_ylabel(
         "Magnitud en escala logarítmica"
     )
 
-    ax.grid(
-        True,
-        alpha=0.3
-    )
-
+    ax.grid(True, alpha=0.3)
     ax.legend()
+
+    fig.tight_layout()
 
     st.pyplot(fig)
     plt.close(fig)
 
 
 # ==========================================
-# FUNDAMENTO MATEMÁTICO
+# FUNDAMENTOS MATEMÁTICOS
 # ==========================================
 
 st.divider()
 
-with st.expander(
-    "Ver fundamento matemático de la SVD"
-):
+with st.expander("Fundamento matemático del proyecto"):
 
     st.subheader(
         "Descomposición en Valores Singulares"
     )
 
     st.write(
-        "La matriz A que representa la radiografía "
-        "se descompone mediante:"
+        "Una radiografía en escala de grises "
+        "puede representarse mediante una matriz A."
     )
 
-    st.latex(
-        r"A = U \Sigma V^T"
+    st.latex(r"A = U\Sigma V^T")
+
+    st.write(
+        "U contiene los vectores singulares izquierdos, "
+        "Sigma contiene los valores singulares y "
+        "V transpuesta contiene los vectores "
+        "singulares derechos."
+    )
+
+    st.subheader("Reconstrucción de rango reducido")
+
+    st.latex(r"A_k = U_k\Sigma_k V_k^T")
+
+    st.write(
+        "Se conservan los primeros k valores singulares "
+        "para obtener una aproximación de rango reducido."
     )
 
     st.write(
-        "Donde U y V contienen vectores singulares "
-        "y Sigma contiene los valores singulares."
+        "Según el teorema de Eckart-Young-Mirsky, "
+        "la SVD truncada proporciona la mejor "
+        "aproximación de rango menor o igual a k "
+        "bajo la norma de Frobenius y la norma espectral."
     )
 
-    st.subheader(
-        "Reconstrucción de rango reducido"
-    )
+    st.subheader("Energía conservada")
 
     st.latex(
-        r"A_k = U_k \Sigma_k V_k^T"
+        r"E_k = \frac{\sum_{i=1}^{k}\sigma_i^2}"
+        r"{\sum_{i=1}^{r}\sigma_i^2}\times 100\%"
     )
 
     st.write(
-        "La reconstrucción conserva únicamente "
+        "Este indicador representa la proporción "
+        "de energía matricial conservada al utilizar "
         "los primeros k valores singulares."
     )
 
-    st.write(
-        "De acuerdo con el teorema de "
-        "Eckart-Young-Mirsky, la SVD truncada "
-        "proporciona una aproximación óptima "
-        "de rango menor o igual a k "
-        "bajo la norma de Frobenius."
-    )
-
-    st.subheader(
-        "Error cuadrático medio"
-    )
-
-    st.latex(
-        r"MSE = \frac{1}{mn}"
-        r"\sum_{i=1}^{m}"
-        r"\sum_{j=1}^{n}"
-        r"(A_{ij}-(A_k)_{ij})^2"
-    )
-
-    st.subheader(
-        "Razón de compresión"
-    )
+    st.subheader("Razón de compresión teórica")
 
     st.latex(
         r"RC = \frac{mn}{k(m+n+1)}"
+    )
+
+    st.write(
+        "La razón compara la cantidad de elementos "
+        "de la matriz original con los coeficientes "
+        "de la representación SVD truncada."
+    )
+
+    st.subheader("Error cuadrático medio")
+
+    st.latex(
+        r"MSE = \frac{1}{mn}"
+        r"\sum_{i=1}^{m}\sum_{j=1}^{n}"
+        r"(A_{ij}-(A_k)_{ij})^2"
     )
 
 
@@ -469,5 +548,6 @@ st.divider()
 
 st.caption(
     "PIXEL INTELIGENTE | "
-    "Proyecto de Álgebra Lineal Computacional"
+    "Álgebra Lineal Computacional | "
+    "Compresión de radiografías mediante SVD"
 )
